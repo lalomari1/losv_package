@@ -1,0 +1,26 @@
+import numpy as np
+
+def smooth_trajectories(df, detected, smooth_window=5):
+    col_veh = detected["COL_VEH"]
+    col_speed = detected["COL_SPEED"]
+    col_acc = detected["COL_ACC"]
+    
+    if col_veh is not None:
+        df["speed_smooth"] = df.groupby(col_veh)[col_speed].transform(
+            lambda s: s.rolling(smooth_window, center=True, min_periods=1).mean()
+        )
+        df["acc_smooth"] = df.groupby(col_veh)[col_acc].transform(
+            lambda s: s.rolling(smooth_window, center=True, min_periods=1).mean()
+        )
+    else:
+        df["speed_smooth"] = df[col_speed].rolling(smooth_window, center=True, min_periods=1).mean()
+        df["acc_smooth"] = df[col_acc].rolling(smooth_window, center=True, min_periods=1).mean()
+    return df
+
+def apply_spatiotemporal_segmentation(df, detected, time_window_sec=10, segment_length_ft=500):
+    col_time = detected["COL_TIME"]
+    col_pos = detected["COL_POS"]
+    
+    df["time_window"] = (df[col_time] // (time_window_sec * 1000)).astype(int)
+    df["segment_id"] = (df[col_pos] // segment_length_ft).astype(int)
+    return df

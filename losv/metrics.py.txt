@@ -1,0 +1,46 @@
+import numpy as np
+import pandas as pd
+
+def zscore(series):
+    mean_val = series.mean()
+    std_val = series.std(ddof=0)
+    if pd.isna(std_val) or std_val == 0:
+        return pd.Series(np.zeros(len(series)), index=series.index)
+    return (series - mean_val) / std_val
+
+def compute_segment_metrics(df, min_mean_speed_fts=5.0, v_min=2.0):
+    group = df.groupby(["segment_id", "time_window"], dropna=True)
+    RV = group.agg(
+        mean_speed=("speed_smooth", "mean"),
+        std_speed=("speed_smooth", "std"),
+        std_acc=("acc_smooth", "std"),
+        n_obs=("speed_smooth", "count")
+    ).dropna().reset_index()
+    
+    RV["mean_speed_safe"] = RV["mean_speed"].clip(lower=min_mean_speed_fts)
+    RV["low_speed_adjusted"] = RV["mean_speed"] < min_mean_speed_fts
+    RV["cv_speed_raw"] = RV["std_speed"] / RV["mean_speed"]
+    RV["cv_speed"] = RV["std_speed"] / np.maximum(RV["mean_speed_safe"], v_min)
+    
+    RV["cv_z"] = zscore(RV["cv_speed"])
+    RV["acc_z"] = zscore(RV["std_acc"])
+    return RV
+
+def compute_shockwave_proxy(RV):
+    S = RV[["segment_id", "time_window", "mean_speed"]].copy()
+    
+    S_next = S.copy()
+    S_next["segment_id"] = S_next["segment_id"] - 1
+    S = S.merge(S_next.rename(columns={"mean_speed": "mean_speed_downstream"}), on=["segment_id", "time_window"], how="left")
+    S["abs_spatial_speed_diff"] = (S["mean_speed"] - S["mean_speed_downstream"]).abs()
+    
+    S_prev_time = RV[["segment_id", "time_window", "mean_speed"]].copy()
+    S_prev_time["time_window"] = S_prev_time["time_window"] + 1
+    S = S.merge(S_prev_time.rename(columns={"mean_speed": "mean_speed_prev"}), on=["segment_id", "time_window"], how="left")
+    S["abs_temporal_speed_diff"] = (S["mean_speed"] - S["mean_speed_prev"]).abs()
+    
+    S["z_spatial"] = zscore(S["abs_spatial_speed_diff"].fillna(S["abs_spatial_speed_diff"].median()))
+    S["z_temporal"] = zscore(S["abs_temporal_speed_diff"].fillna(S["abs_temporal_speed_diff"].median()))
+    S["shockwave_proxy"] = 0.5 * S["z_spatial"] + 0.5 * S["z_temporal"]
+    
+    return RV.merge(S[["segment_id", "time_window", "abs_spatial_speed_diff", "abs_temporal_speed_diff", "shockwave_proxy"]], on=["segment_id", "time_window"], how="left")

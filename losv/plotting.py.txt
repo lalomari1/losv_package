@@ -1,0 +1,153 @@
+import matplotlib.pyplot as plt
+import numpy as np
+import os
+
+def plot_all_results(RV, output_figures_dir, dpi=900):
+    os.makedirs(output_figures_dir, exist_ok=True)
+    levels = ["A", "B", "C", "D", "E", "F"]
+    
+    # Figure 11: Side-by-Side Category Distribution
+    conv_counts = RV["LOS_conv"].value_counts().reindex(levels, fill_value=0)
+    losv_counts = RV["LOSv_quantile"].value_counts().reindex(levels, fill_value=0)
+    conv_pct = (conv_counts / conv_counts.sum()) * 100
+    losv_pct = (losv_counts / losv_counts.sum()) * 100
+    
+    x = np.arange(len(levels))
+    width = 0.38
+    
+    plt.figure(figsize=(8, 5))
+    plt.bar(x - width/2, conv_pct, width, label="Conventional LOS")
+    plt.bar(x + width/2, losv_pct, width, label="LOS-V")
+    plt.xticks(x, levels)
+    plt.xlabel("LOS Category")
+    plt.ylabel("Percentage of Observations (%)")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_figures_dir, "Figure_R11_LOS_vs_LOSV_Category_Distribution.png"), dpi=dpi)
+    plt.close()
+    
+    # 1. Protected Speed CV Distribution
+    plt.figure(figsize=(7, 5))
+    plt.hist(RV["cv_speed"].dropna(), bins=50)
+    plt.xlabel("Protected Speed Coefficient of Variation")
+    plt.ylabel("Frequency")
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_figures_dir, "Figure_R1_Protected_Speed_CV_Distribution.png"), dpi=dpi)
+    plt.close()
+
+    # 2. Smoothed Acceleration Noise Distribution
+    plt.figure(figsize=(7, 5))
+    plt.hist(RV["std_acc"].dropna(), bins=50)
+    plt.xlabel("Smoothed Acceleration Noise (Std. Dev.)")
+    plt.ylabel("Frequency")
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_figures_dir, "Figure_R2_Smoothed_Acceleration_Noise_Distribution.png"), dpi=dpi)
+    plt.close()
+
+    # 3. Standardized Components
+    plt.figure(figsize=(7, 5))
+    plt.hist(RV["cv_z"].dropna(), bins=50, alpha=0.6, label="Z(CVv)")
+    plt.hist(RV["acc_z"].dropna(), bins=50, alpha=0.6, label="Z(σa)")
+    plt.xlabel("Standardized Value")
+    plt.ylabel("Frequency")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_figures_dir, "Figure_R3_Standardized_Component_Distributions.png"), dpi=dpi)
+    plt.close()
+
+    # 4. Composite Index Distribution
+    plt.figure(figsize=(7, 5))
+    plt.hist(RV["losv_revised"].dropna(), bins=50)
+    plt.xlabel("Revised LOS-V Composite Index")
+    plt.ylabel("Frequency")
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_figures_dir, "Figure_R4_Revised_LOSV_Index_Distribution.png"), dpi=dpi)
+    plt.close()
+
+    # 5. Cross-Classification (Quantile) Heatmap
+    try:
+        conf_q_counts = pd.crosstab(RV["LOS_conv"], RV["LOSv_quantile"])
+        conf_q_pct = conf_q_counts.div(conf_q_counts.sum(axis=1), axis=0) * 100
+        plt.figure(figsize=(7, 5))
+        im = plt.imshow(conf_q_pct.values, aspect="auto")
+        plt.colorbar(im, label="Percentage (%)")
+        for i in range(conf_q_pct.shape[0]):
+            for j in range(conf_q_pct.shape[1]):
+                plt.text(j, i, f"{conf_q_pct.iloc[i, j]:.1f}%", ha="center", va="center")
+        plt.xticks(range(len(conf_q_pct.columns)), conf_q_pct.columns)
+        plt.yticks(range(len(conf_q_pct.index)), conf_q_pct.index)
+        plt.xlabel("LOS-V (Quantile)")
+        plt.ylabel("Conventional LOS")
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_figures_dir, "Figure_R5_CrossClassification_Quantile_Heatmap.png"), dpi=dpi)
+        plt.close()
+    except:
+        pass
+
+    # 6. Cross-Classification (Fixed Threshold) Heatmap
+    try:
+        conf_f_counts = pd.crosstab(RV["LOS_conv"], RV["LOSv_fixed"])
+        conf_f_pct = conf_f_counts.div(conf_f_counts.sum(axis=1), axis=0) * 100
+        plt.figure(figsize=(7, 5))
+        im = plt.imshow(conf_f_pct.values, aspect="auto")
+        plt.colorbar(im, label="Percentage (%)")
+        for i in range(conf_f_pct.shape[0]):
+            for j in range(conf_f_pct.shape[1]):
+                plt.text(j, i, f"{conf_f_pct.iloc[i, j]:.1f}%", ha="center", va="center")
+        plt.xticks(range(len(conf_f_pct.columns)), conf_f_pct.columns)
+        plt.yticks(range(len(conf_f_pct.index)), conf_f_pct.index)
+        plt.xlabel("LOS-V (Fixed Threshold)")
+        plt.ylabel("Conventional LOS")
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_figures_dir, "Figure_R6_CrossClassification_Fixed_Heatmap.png"), dpi=dpi)
+        plt.close()
+    except:
+        pass
+
+    # 7. Side-by-Side Distribution Comparison
+    plt.figure(figsize=(8, 5))
+    plt.hist(RV["speed_mph"].dropna(), bins=40, alpha=0.6, label="Conventional Speed (mph)")
+    plt.hist(RV["losv_revised"].dropna(), bins=40, alpha=0.6, label="Revised LOS-V Index")
+    plt.xlabel("Value")
+    plt.ylabel("Frequency")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_figures_dir, "Figure_R7_SideBySide_Distribution_Comparison.png"), dpi=dpi)
+    plt.close()
+
+    # 8. Weight Sensitivity Analysis
+    plt.figure(figsize=(8, 5))
+    for alpha, beta in [(0.3, 0.7), (0.4, 0.6), (0.5, 0.5), (0.6, 0.4), (0.7, 0.3)]:
+        idx = alpha * RV["cv_z"] + beta * RV["acc_z"]
+        plt.hist(idx.dropna(), bins=40, alpha=0.4, label=f"α={alpha}, β={beta}")
+    plt.xlabel("LOS-V Index")
+    plt.ylabel("Frequency")
+    plt.legend()
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_figures_dir, "Figure_R8_Weight_Sensitivity_Distributions.png"), dpi=dpi)
+    plt.close()
+
+    # 9. Operational Contrast Scatter Plot
+    plt.figure(figsize=(7, 5))
+    cat_fixed = pd.Categorical(RV["LOSv_fixed"], categories=levels, ordered=True)
+    sc = plt.scatter(RV["mean_speed"], RV["cv_speed"], c=cat_fixed.codes, alpha=0.8, cmap="viridis")
+    plt.xlabel("Mean Speed (ft/s)")
+    plt.ylabel("Protected Speed CV")
+    cbar = plt.colorbar(sc)
+    cbar.set_label("LOS-V Fixed Category Code (0=A, 5=F)")
+    plt.tight_layout()
+    plt.savefig(os.path.join(output_figures_dir, "Figure_R9_Operational_Contrast_MeanSpeed_vs_CV.png"), dpi=dpi)
+    plt.close()
+
+    # 10. Shockwave Proxy Boxplot Grouped Comparison
+    try:
+        plt.figure(figsize=(8, 5))
+        conv_meds = RV.groupby("LOS_conv", observed=False)["shockwave_proxy"].median().dropna().values
+        losv_meds = RV.groupby("LOSv_fixed", observed=False)["shockwave_proxy"].median().dropna().values
+        plt.boxplot([conv_meds, losv_meds], labels=["Conventional LOS\n(group medians pooled)", "Revised LOS-V\n(group medians pooled)"])
+        plt.ylabel("Shockwave Proxy")
+        plt.tight_layout()
+        plt.savefig(os.path.join(output_figures_dir, "Figure_R10_ShockwaveProxy_Grouped_Comparison.png"), dpi=dpi)
+        plt.close()
+    except:
+        pass

@@ -1,0 +1,51 @@
+import pandas as pd
+import json
+import os
+
+def find_col(columns, keyword_groups, required=True):
+    col_list = list(columns)
+    lowered = {c: c.lower() for c in col_list}
+    groups = [[item] if isinstance(item, str) else list(item) for item in keyword_groups]
+
+    for group in groups:
+        for c in col_list:
+            if all(k.lower() in lowered[c] for k in group):
+                return c
+    for group in groups:
+        for c in col_list:
+            if any(k.lower() in lowered[c] for k in group):
+                return c
+    if required:
+        raise ValueError(f"Required column not found for keywords: {keyword_groups}")
+    return None
+
+def load_and_detect_trajectory(data_path, root_dir=None):
+    df_raw = pd.read_csv(data_path)
+    
+    col_time = find_col(df_raw.columns, [["global", "time"], ["time"]])
+    col_speed = find_col(df_raw.columns, [["v_vel"], ["speed"]])
+    col_acc = find_col(df_raw.columns, [["v_acc"], ["acc"]])
+    col_pos = find_col(df_raw.columns, [["local_y"], ["position"], ["y"]])
+    col_veh = find_col(df_raw.columns, [["vehicle", "id"], ["veh", "id"], ["vehicle_id"]], required=False)
+    col_lane = find_col(df_raw.columns, [["lane", "id"], ["lane"]], required=False)
+    
+    detected = {
+        "COL_TIME": col_time, "COL_SPEED": col_speed, "COL_ACC": col_acc,
+        "COL_POS": col_pos, "COL_VEH": col_veh, "COL_LANE": col_lane
+    }
+    
+    if root_dir:
+        os.makedirs(root_dir, exist_ok=True)
+        with open(os.path.join(root_dir, "detected_columns.json"), "w") as f:
+            json.dump(detected, f, indent=2)
+            
+    required_cols = [c for c in [col_time, col_speed, col_acc, col_pos, col_veh] if c is not None]
+    df = df_raw.copy()
+    for c in required_cols:
+        df[c] = pd.to_numeric(df[c], errors="coerce")
+    df = df.dropna(subset=[col_time, col_speed, col_acc, col_pos]).copy()
+    
+    sort_cols = [col_veh, col_time] if col_veh is not None else [col_time]
+    df = df.sort_values(sort_cols).reset_index(drop=True)
+    
+    return df, detected

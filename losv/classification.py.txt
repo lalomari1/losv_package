@@ -1,0 +1,17 @@
+import pandas as pd
+import numpy as np
+
+def apply_los_classifications(RV, alpha=0.5, beta=0.5):
+    CONV_BINS = [0, 30, 45, 55, 65, 75, np.inf]
+    CONV_LABELS = ["F", "E", "D", "C", "B", "A"]
+    FIXED_THRESHOLDS = [-np.inf, -1.5, -0.75, 0.0, 0.75, 1.5, np.inf]
+    FIXED_LABELS = ["A", "B", "C", "D", "E", "F"]
+    
+    RV["losv_revised"] = alpha * RV["cv_z"] + beta * RV["acc_z"]
+    RV["speed_mph"] = RV["mean_speed"] * 2.237
+    
+    RV["LOS_conv"] = pd.cut(RV["speed_mph"], bins=CONV_BINS, labels=CONV_LABELS, right=False, include_lowest=True)
+    RV["LOSv_quantile"] = pd.qcut(RV["losv_revised"], q=6, labels=["A", "B", "C", "D", "E", "F"], duplicates="drop")
+    RV["LOSv_fixed"] = pd.cut(RV["losv_revised"], bins=FIXED_THRESHOLDS, labels=FIXED_LABELS, include_lowest=True)
+    RV["dynamic_state"] = pd.cut(RV["losv_revised"], bins=[-np.inf, -0.5, 0.5, np.inf], labels=["Stable", "Transitional", "Unstable"], include_lowest=True)
+    return RV
