@@ -5,7 +5,16 @@
 
 This repository contains the official open-source Python package for the **LOS-V (Variability-based Level of Service)** framework, introduced in the paper:  
 > **"Revisiting Level of Service Assessment by Incorporating Speed Variability and Acceleration Noise Using High-Resolution Trajectory Data"** > *Accepted for publication in the Transportation Research Record (TRR).*
+DOI: To be added later 
+**If you use this framework or package in your transportation research, please cite our TRR paper:**
 
+@article{losv2026,
+  title={Revisiting Level of Service Assessment by Incorporating Speed Variability and Acceleration Noise Using High-Resolution Trajectory Data},
+  author={AlOmari, Laith D.},
+  journal={Transportation Research Record},
+  year={2026},
+  publisher={SAGE Publications}
+}
 ---
 
 ## 🔍 Overview
@@ -39,3 +48,5 @@ Clone this repository and install it locally using `pip`:
 git clone [https://github.com/lalomari1/losv_package.git](https://github.com/lalomari1/losv_package.git)
 cd losv_package
 pip install .
+
+---
