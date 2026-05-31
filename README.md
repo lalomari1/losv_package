@@ -36,6 +36,45 @@ The package is structured modularly for maximum transparency and academic reprod
 Clone this repository and install it locally using `pip`:
 
 ```bash
-git clone https://github.com/lalomari1/losv_package.git
+git clone [https://github.com/lalomari1/losv_package.git](https://github.com/lalomari1/losv_package.git)
 cd losv_package
 pip install .
+
+---
+
+## ⚡ Quick Start & Usage
+With just a few lines of code, you can execute the entire pipeline, calculate the advanced traffic indicators, and export all 11 scientific figures:
+import losv
+
+# 1. Load data and automatically detect columns
+data_path = "path_to_your_ngsim_data.csv"
+df, detected = losv.load_and_detect_trajectory(data_path)
+
+# 2. Run the processing pipeline
+df = losv.smooth_trajectories(df, detected, smooth_window=5)
+df = losv.apply_spatiotemporal_segmentation(df, detected, time_window_sec=10, segment_length_ft=500)
+
+# 3. Compute indicators & validation metrics
+metrics = losv.compute_segment_metrics(df, min_mean_speed_fts=5.0)
+metrics = losv.compute_shockwave_proxy(metrics)
+
+# 4. Classify traffic states
+final_results = losv.apply_los_classifications(metrics, alpha=0.5, beta=0.5)
+
+# 5. Export 900 DPI publication-ready figures
+losv.plot_all_results(final_results, output_figures_dir="./results/figures", dpi=900)
+
+print("Pipeline completed. Check your results folder!")
+
+---
+
+## 📄 Citation
+If you use this framework or package in your transportation research, please cite our TRR paper:
+
+@article{losv2026,
+  title={Revisiting Level of Service Assessment by Incorporating Speed Variability and Acceleration Noise Using High-Resolution Trajectory Data},
+  author={AlOmari, Laith D.},
+  journal={Transportation Research Record},
+  year={2026},
+  publisher={SAGE Publications}
+}
