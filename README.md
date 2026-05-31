@@ -36,5 +36,6 @@ The package is structured modularly for maximum transparency and academic reprod
 Clone this repository and install it locally using `pip`:
 
 ```bash
-git clone https://github.com/lalomari1/losv_package.gitcd losv_package
+git clone https://github.com/lalomari1/losv_package.git
+cd losv_package
 pip install .
