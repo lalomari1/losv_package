@@ -4,8 +4,8 @@
 [![Python](https://img.shields.io/badge/Python-3.7%2B-blue.svg)](https://www.python.org/)
 
 This repository contains the official open-source Python package for the **LOS-V (Variability-based Level of Service)** framework, introduced in the paper:  
-> **"Revisiting Level of Service Assessment by Incorporating Speed Variability and Acceleration Noise Using High-Resolution Trajectory Data"** > *Accepted for publication in the Transportation Research Record (TRR).*
-DOI: To be added later 
+> **"Revisiting Level of Service Assessment by Incorporating Speed Variability and Acceleration Noise Using High-Resolution Trajectory Data"** > *Published in the Transportation Research Record (TRR).*
+DOI: 10.1177/03611981261457106 
 
 **If you use this framework or package in your transportation research, please cite our TRR paper:**
 
